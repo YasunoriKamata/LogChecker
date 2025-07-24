@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="葉山ライフセービングクラブの出勤簿システム(管理者用)">
+  <meta name="author" content="Yasunori Kamata">
+  <meta name="robots" content="none">
+  <title>出勤簿データ確認</title>
+  <!-- スタイルシート -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- スクリプト -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="script.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>出勤簿データ確認</h1>
+    <div class="date-selector">
+      <label for="checkDate">確認したい日付を選択:</label>
+      <input type="date" id="date" name="checkDate">
+      <button onclick="checkStatus()" class="btn">確認</button>
+      <button onclick="moveDay(-1)" class="btn">＜前日</button>
+      <button onclick="moveDay(1)" class="btn">翌日＞</button>
+    </div>
+
+    <div class="status-container">
+      <div class="status-block">
+        <h3>森戸海岸監視所</h3>
+        <button onclick="addRow(1)" class="btn">行追加</button>
+        <button onclick="execUpdate(1)" class="btn">修正登録</button>
+        <div class="status-fields-container">
+          <div class="status-field">
+            <label>記入者:</label>
+            <span id="recorder1" class="status-value">-</span>
+          </div>
+          <div class="status-field">
+            <label>監視長:</label>
+            <span id="supervisor1" class="status-value">-</span>
+          </div>
+        </div>
+        <section id="attendanceTable1">
+          <table>
+            <thead>
+              <tr>
+                <th>名前</th>
+                <th>ボラ</th>
+                <th>勤務形態</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>バッチテスト</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tbody id="attendanceTableBody1">
+              <!-- ここに行が動的に追加される -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="status-block">
+        <h3>一色海岸監視所</h3>
+        <button onclick="addRow(2)" class="btn">行追加</button>
+        <button onclick="execUpdate(2)" class="btn">修正登録</button>
+        <div class="status-fields-container">
+          <div class="status-field">
+            <label>記入者:</label>
+            <span id="recorder2" class="status-value">-</span>
+          </div>
+          <div class="status-field">
+            <label>監視長:</label>
+            <span id="supervisor2" class="status-value">-</span>
+          </div>
+        </div>
+        <section id="attendanceTable2">
+          <table>
+            <thead>
+              <tr>
+                <th>名前</th>
+                <th>ボラ</th>
+                <th>勤務形態</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>バッチテスト</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tbody id="attendanceTableBody2">
+              <!-- ここに行が動的に追加される -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="status-block">
+        <h3>長者ヶ崎海岸監視所</h3>
+        <button onclick="addRow(3)" class="btn">行追加</button>
+        <button onclick="execUpdate(3)" class="btn">修正登録</button>
+        <div class="status-fields-container">
+          <div class="status-field">
+            <label>記入者:</label>
+            <span id="recorder3" class="status-value">-</span>
+          </div>
+          <div class="status-field">
+            <label>監視長:</label>
+            <span id="supervisor3" class="status-value">-</span>
+          </div>
+        </div>
+        <section id="attendanceTable3">
+          <table>
+            <thead>
+              <tr>
+                <th>名前</th>
+                <th>ボラ</th>
+                <th>勤務形態</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>バッチテスト</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tbody id="attendanceTableBody3">
+              <!-- ここに行が動的に追加される -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="status-block">
+        <h3>イベント</h3>
+        <button onclick="addRow(4)" class="btn">行追加</button>
+        <button onclick="execUpdate(4)" class="btn">修正登録</button>
+        <div class="status-fields-container">
+          <div class="status-field">
+            <label>記入者:</label>
+            <span id="recorder4" class="status-value">-</span>
+          </div>
+          <div class="status-field">
+            <label>監視長:</label>
+            <span id="supervisor4" class="status-value">-</span>
+          </div>
+        </div>
+        <section id="attendanceTable4">
+          <table>
+            <thead>
+              <tr>
+                <th>名前</th>
+                <th>ボラ</th>
+                <th>勤務形態</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>バッチテスト</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tbody id="attendanceTableBody4">
+              <!-- ここに行が動的に追加される -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+    <!-- 時刻選択用のリスト -->
+    <datalist id="data-list">
+      <option value="08:00"></option>
+      <option value="08:30"></option>
+      <option value="09:00"></option>
+      <option value="09:30"></option>
+      <option value="10:00"></option>
+      <option value="10:30"></option>
+      <option value="11:00"></option>
+      <option value="11:30"></option>
+      <option value="12:00"></option>
+      <option value="12:30"></option>
+      <option value="13:00"></option>
+      <option value="13:30"></option>
+      <option value="14:00"></option>
+      <option value="14:30"></option>
+      <option value="15:00"></option>
+      <option value="15:30"></option>
+      <option value="16:00"></option>
+      <option value="16:30"></option>
+      <option value="17:00"></option>
+    </datalist>
+    <div id="overlay" style="display: none;"></div>
+</body>
+
+</html>

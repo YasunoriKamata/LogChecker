@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="葉山ライフセービングクラブの出勤簿システム(管理者用)">
+  <meta name="author" content="Yasunori Kamata">
+  <meta name="robots" content="none">
+  <title>クラブ員追加</title>
+  <!-- スタイルシート -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- スクリプト -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="script.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>クラブ員追加</h1>
+    <div class="content">
+      <form id="addMemberForm">
+        <div class="form-group">
+          <label for="name">名前</label>
+          <input type="text" id="name" name="name" autocomplete="name" required>
+        </div>
+        <div class="form-group">
+          <label for="namek">名前(かな)</label>
+          <input type="text" id="namek" name="namek" autocomplete="off" required>
+        </div>
+        <div class="button-group">
+          <a href="../index.html" class="btn back-btn">
+            <span>&larr;</span> 戻る
+          </a>
+          <button type="button" class="btn add-btn" onclick="execRegist()">
+            <span>&#43;</span> 追加
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="overlay" style="display: none;"></div>
+</body>
+
+</html>
