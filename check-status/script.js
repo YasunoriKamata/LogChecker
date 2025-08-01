@@ -1,17 +1,19 @@
 // 定数定義
 const ROW_TEMPLATE = `
-     <tr>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
-    </tr>
+      <td><input type="text" value="" /></td>
+      <td><input type="checkbox" /></td>
+      <td>
+        <select>
+          <option value="1">日勤</option>
+          <option value="2">時間勤</option>
+        </select>
+      </td>
+      <td><input type="time" list="data-list" value="" /></td>
+      <td><input type="time" list="data-list" value="" /></td>
+      <td><input type="checkbox" /></td>
+      <td><input type="text" value="" /></td>
   `;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx-Q7og408mrP9cC7108r6xuT-uoXmCVzzbPpLz59D5naxCM5tbyuAAdwwxPBaY8bDt/exec";
-const ROWS = 1;
 let dataCache = null; // キャッシュ
 
 // 初期処理
@@ -33,8 +35,8 @@ $(document).ready(function () {
 // 全ての記入者・監視長の初期値を初期化
 function initHeaders() {
   for (let i = 1; i <= 4; i++) {
-    document.getElementById(`recorder${i}`).textContent = '-';
-    document.getElementById(`supervisor${i}`).textContent = '-';
+    document.getElementById(`recorder${i}`).value = '';
+    document.getElementById(`supervisor${i}`).value = '';
   }
 }
 
@@ -51,10 +53,10 @@ function initRow() {
   // 各テーブルボディに空の行を追加
   tableBodies.forEach(tableBody => {
     if (tableBody) {
+      const row = document.createElement('tr');
       tableBody.innerHTML = '';
-      for (let i = 0; i < ROWS; i++) {
-        tableBody.insertAdjacentHTML('beforeend', ROW_TEMPLATE);
-      }
+      row.innerHTML = ROW_TEMPLATE.trim(); // ROW_TEMPLATE を DOM に変換
+      tableBody.appendChild(row);
     }
   });
 }
@@ -120,8 +122,8 @@ async function fetchAllData() {
     console.log(`キャッシュサイズ：${sizeInBytes} バイト（約 ${(sizeInBytes / 1024).toFixed(2)} KB）`);
 
     // 今日の日付のデータを表示
-    const today = new Date().toISOString().split('T')[0];
-    const formattedToday = formatDateForAPI(today);
+    const date = new Date(document.getElementById('date').value).toISOString().split('T')[0];
+    const formattedToday = formatDateForAPI(date);
     if (responseData[formattedToday]) {
       updateDisplay(responseData[formattedToday]);
     }
@@ -199,8 +201,8 @@ function displayLocationInfo(index, locationData) {
   const tableBody = document.getElementById(`attendanceTableBody${index}`);
 
   if (recorderElement && supervisorElement) {
-    recorderElement.textContent = locationData.writer;
-    supervisorElement.textContent = locationData.supervisor;
+    recorderElement.value = locationData.writer;
+    supervisorElement.value = locationData.supervisor;
   }
 
   // テーブルの内容をクリア
@@ -241,29 +243,13 @@ function displayLocationInfo(index, locationData) {
 
 // ボタン処理
 function addRow(location) {
-  //１行しかないときは、削除してから
   const tableBody = document.getElementById(`attendanceTableBody${location}`);
-  if (tableBody && tableBody.children.length === 1) {
-    tableBody.innerHTML = '';
-  }
+
   // 新しい行を追加
   if (tableBody) {
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-      <td><input type="text" value="" /></td>
-      <td><input type="checkbox" /></td>
-      <td>
-        <select>
-          <option value="1">日勤</option>
-          <option value="2">時間勤</option>
-        </select>
-      </td>
-      <td><input type="time" list="data-list" value="" /></td>
-      <td><input type="time" list="data-list" value="" /></td>
-      <td><input type="checkbox" /></td>
-      <td><input type="text" value="" /></td>
-    `;
-    tableBody.appendChild(newRow);
+    const newrow = document.createElement('tr');
+    newrow.innerHTML = ROW_TEMPLATE.trim(); // ROW_TEMPLATE を DOM に変換
+    tableBody.appendChild(newrow);
   }
 }
 
@@ -293,34 +279,37 @@ async function execUpdate(location) {
 
   try {
     setLoading(true);
-    console.log(`データ削除処理開始：[${getJSTISOString()}]`);
-    //削除データ作成
-    const deleteData = {
-      type: 'delete',
-      date: selectedDate,
-      location: `${location}`
-    };
-    //削除処理実行
-    let response = await fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'cors',
-      body: JSON.stringify(deleteData)
-    });
-
-    let result = await response.json();
-    if (result.status === 'error') {
-      //削除データがない場合などはここに入る
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: result.message,
+    //既存データが存在する場合は削除処理を行う
+    if (isDataExist(selectedDate, location)) {
+      console.log(`データ削除処理開始：[${getJSTISOString()}]`);
+      //削除データ作成
+      const deleteData = {
+        type: 'delete',
+        date: selectedDate,
+        location: `${location}`
+      };
+      //削除処理実行
+      let response = await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(deleteData)
       });
-      console.log(`出勤簿データ登録失敗 削除データ無し？：[${getJSTISOString()}]`);
-      return
-    }
-    console.log(`データ削除処理完了：[${getJSTISOString()}]`);
-    console.log(`データ登録処理開始：[${getJSTISOString()}]`);
 
+      let result = await response.json();
+      if (result.status === 'error') {
+        //削除データがない場合などはここに入る
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: result.message,
+        });
+        console.log(`出勤簿データ登録失敗 削除データ無し？：[${getJSTISOString()}]`);
+        return
+      }
+      console.log(`データ削除処理完了：[${getJSTISOString()}]`);
+    }
+
+    console.log(`データ登録処理開始：[${getJSTISOString()}]`);
     // 登録データ作成
     const tableBody = document.getElementById(`attendanceTableBody${location}`);
     const rows = tableBody.querySelectorAll('tr');
@@ -340,8 +329,8 @@ async function execUpdate(location) {
       type: 'regist',
       date: selectedDate,
       location: `${location}`,
-      recorder: document.getElementById(`recorder${location}`).textContent.trim(),
-      supervisor: document.getElementById(`supervisor${location}`).textContent.trim(),
+      recorder: document.getElementById(`recorder${location}`).value.trim(),
+      supervisor: document.getElementById(`supervisor${location}`).value.trim(),
       details: details
     };
 
@@ -367,7 +356,28 @@ async function execUpdate(location) {
   } catch (error) {
     console.error(`データ更新処理失敗：[${getJSTISOString()}]：`, error);
   } finally {
+    fetchAllData(); // 全データを再取得
     setLoading(false);
+  }
+}
+//既存データの存在チェック
+function isDataExist(selectedDate, location) {
+  if (!dataCache || !dataCache[selectedDate]) {
+    return false; // 日付のデータが存在しない
+  }
+
+  // 場所ごとのデータを確認
+  switch (location) {
+    case 1:
+      return dataCache[selectedDate].morito !== undefined;
+    case 2:
+      return dataCache[selectedDate].isshiki !== undefined;
+    case 3:
+      return dataCache[selectedDate].chojagasaki !== undefined;
+    case 4:
+      return dataCache[selectedDate].event !== undefined;
+    default:
+      return false; // 無効な場所
   }
 }
 
