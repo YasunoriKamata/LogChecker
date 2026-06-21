@@ -1,6 +1,6 @@
 // 定数定義
 const ROW_TEMPLATE = `
-      <td><input type="text" value="" /></td>
+      <td><input type="text" class="autocomplete-input" value=""/></td>
       <td><input type="checkbox" /></td>
       <td>
         <select>
@@ -14,12 +14,16 @@ const ROW_TEMPLATE = `
       <td><input type="text" value="" /></td>
   `;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx-Q7og408mrP9cC7108r6xuT-uoXmCVzzbPpLz59D5naxCM5tbyuAAdwwxPBaY8bDt/exec";
+const NAMELIST_URL = "https://script.google.com/macros/s/AKfycbyl9G4SpHidYTbpvW7tKoWbu7OQzSwo9P2y10-jjLZZvjk53YSjWuCsKLtaHfRge5J37A/exec";
 let dataCache = null; // キャッシュ
+let nameMasterCache = [];
 
 // 初期処理
 $(document).ready(function () {
   // 全データを取得
   fetchAllData();
+  // マスタデータの読み込み
+  getMasterData();
 
   // ヘッダの初期化・行の動的追加
   initHeaders();
@@ -87,6 +91,62 @@ function initDragScroll() {
 
   Object.entries(events).forEach(([event, handler]) => {
     slider.addEventListener(event, handler);
+  });
+}
+//名前マスタの取得
+async function getMasterData() {
+  //キャッシュを削除
+  nameMasterCache = [];
+  console.log(`マスタデータ取得開始：[${getJSTISOString()}]`);
+
+  // オーバーレイを表示
+  setLoading(true);
+  try {
+    const response = await fetch(NAMELIST_URL, {
+      method: 'GET',
+      mode: 'cors',
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    nameMasterCache = await response.json();
+    console.log(`マスタデータ取得完了：[${getJSTISOString()}]`);
+  } catch (error) {
+    console.error(`マスタデータ取得失敗：[${getJSTISOString()}]：`, error);
+  } finally {
+    // オーバーレイを非表示
+    setLoading(false);
+  }
+
+  // オートコンプリートを再初期化
+  initAutocomplete();
+}
+//名前の入力補助
+function initAutocomplete() {
+  $(".autocomplete-input").autocomplete({
+    source: function (request, response) {
+      const term = request.term.toLowerCase();
+      const matches = nameMasterCache.filter(item =>
+        item[0].toLowerCase().startsWith(term) ||
+        item[1].toLowerCase().startsWith(term)
+      );
+      response(matches.map(item => item[0]));
+    },
+    minLength: 1,
+    delay: 0,
+    change: function (_event, ui) {
+      // フォーカスを外した時に候補に一致しない場合はクリア&警告
+      const isValid = nameMasterCache.some(item => item[0] === $(this).val());
+      if (!isValid) {
+        $(this).val('');
+        $(this).focus();
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "入力候補から選択してください",
+        });
+      }
+    }
   });
 }
 
@@ -163,7 +223,11 @@ async function checkStatus() {
   try {
     const selectedDate = document.getElementById('date').value;
     if (!selectedDate) {
-      alert('日付を選択してください');
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "日付を選択してください",
+      });
       return;
     }
 
@@ -217,7 +281,7 @@ function displayLocationInfo(index, locationData) {
       locationData.details.forEach(detail => {
         const row = document.createElement('tr');
         row.innerHTML = `
-        <td><input type="text" value="${detail.name || ''}" /></td>
+        <td><input type="text" class="autocomplete-input" value="${detail.name || ''}" /></td>
         <td><input type="checkbox" ${detail.volunteer == 1 ? 'checked' : ''} /></td>
         <td>
           <select>
@@ -251,13 +315,19 @@ function addRow(location) {
     newrow.innerHTML = ROW_TEMPLATE.trim(); // ROW_TEMPLATE を DOM に変換
     tableBody.appendChild(newrow);
   }
+  // オートコンプリートを再初期化
+  initAutocomplete();
 }
 
 async function execUpdate(location) {
   let msg = '';
   const selectedDate = document.getElementById('date').value.replace(/-/g, '/');
   if (!selectedDate) {
-    alert('日付を選択してください');
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "日付を選択してください",
+    });
     return;
   }
   switch (location) {
@@ -275,91 +345,119 @@ async function execUpdate(location) {
       break;
   }
 
-  alert(`${msg}：${selectedDate} の出勤簿データを修正登録します。`);
-
-  try {
-    setLoading(true);
-    //既存データが存在する場合は削除処理を行う
-    if (isDataExist(selectedDate, location)) {
-      console.log(`データ削除処理開始：[${getJSTISOString()}]`);
-      //削除データ作成
-      const deleteData = {
-        type: 'delete',
-        date: selectedDate,
-        location: `${location}`
-      };
-      //削除処理実行
-      let response = await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'cors',
-        body: JSON.stringify(deleteData)
-      });
-
-      let result = await response.json();
-      if (result.status === 'error') {
-        //削除データがない場合などはここに入る
+  Swal.fire({
+    title: "Are you sure?",
+    html: `${msg}：${selectedDate} の出勤簿データを<br>修正登録します。`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "修正登録"
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
         Swal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: result.message,
+          title: '登録中です...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
         });
-        console.log(`出勤簿データ登録失敗 削除データ無し？：[${getJSTISOString()}]`);
-        return
+        setLoading(true);
+        //既存データが存在する場合は削除処理を行う
+        if (isDataExist(selectedDate, location)) {
+          console.log(`データ削除処理開始：[${getJSTISOString()}]`);
+          //削除データ作成
+          const deleteData = {
+            type: 'delete',
+            date: selectedDate,
+            location: `${location}`
+          };
+          //削除処理実行
+          let response = await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'cors',
+            body: JSON.stringify(deleteData)
+          });
+
+          let result = await response.json();
+          if (result.status === 'error') {
+            //削除データがない場合などはここに入る
+            Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              html: `データ登録処理失敗 削除データ無し？：[${getJSTISOString()}]`,
+            });
+            console.log(`出勤簿データ登録失敗 削除データ無し？：[${getJSTISOString()}]`);
+            return
+          }
+          console.log(`データ削除処理完了：[${getJSTISOString()}]`);
+        }
+
+        console.log(`データ登録処理開始：[${getJSTISOString()}]`);
+        // 登録データ作成
+        const tableBody = document.getElementById(`attendanceTableBody${location}`);
+        const rows = tableBody.querySelectorAll('tr');
+        const details = Array.from(rows).map(row => {
+          const inputs = row.querySelectorAll('input, select');
+          return {
+            name: inputs[0].value.trim(),
+            volunteer: inputs[1].checked ? 1 : 0,
+            shiftType: parseInt(inputs[2].value, 10),
+            startTime: inputs[3].value.trim(),
+            endTime: inputs[4].value.trim(),
+            batchTest: inputs[5].checked ? 1 : 0,
+            remarks: inputs[6].value.trim()
+          };
+        }).filter(detail => detail.name !== '');
+        const requestData = {
+          type: 'regist',
+          date: selectedDate,
+          location: `${location}`,
+          recorder: document.getElementById(`recorder${location}`).value.trim(),
+          supervisor: document.getElementById(`supervisor${location}`).value.trim(),
+          details: details
+        };
+
+        response = await fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'cors',
+          body: JSON.stringify(requestData)
+        });
+        result = await response.json();
+
+        switch (result.status) {
+          case 'success':
+            // 登録成功
+            console.log(`データ登録処理完了：[${getJSTISOString()}]`);
+            await Swal.fire({
+              title: "Good job!",
+              text: "正常に登録されました。",
+              icon: "success",
+              showConfirmButton: false,
+              timer: 1500
+            });
+            break;
+          case 'error':
+            // 既存データがある場合などはここに入る
+            console.log(`データ登録処理失敗 既存データ有り？：[${getJSTISOString()}]`);
+            await Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              html: `データ登録処理失敗 既存データ有り？：[${getJSTISOString()}]`,
+            });
+            return;
+        }
+      } catch (error) {
+        console.error(`データ更新処理失敗：[${getJSTISOString()}]：`, error);
+      } finally {
+        fetchAllData(); // 全データを再取得
+        setLoading(false);
       }
-      console.log(`データ削除処理完了：[${getJSTISOString()}]`);
     }
-
-    console.log(`データ登録処理開始：[${getJSTISOString()}]`);
-    // 登録データ作成
-    const tableBody = document.getElementById(`attendanceTableBody${location}`);
-    const rows = tableBody.querySelectorAll('tr');
-    const details = Array.from(rows).map(row => {
-      const inputs = row.querySelectorAll('input, select');
-      return {
-        name: inputs[0].value.trim(),
-        volunteer: inputs[1].checked ? 1 : 0,
-        shiftType: parseInt(inputs[2].value, 10),
-        startTime: inputs[3].value.trim(),
-        endTime: inputs[4].value.trim(),
-        batchTest: inputs[5].checked ? 1 : 0,
-        remarks: inputs[6].value.trim()
-      };
-    }).filter(detail => detail.name !== '');
-    const requestData = {
-      type: 'regist',
-      date: selectedDate,
-      location: `${location}`,
-      recorder: document.getElementById(`recorder${location}`).value.trim(),
-      supervisor: document.getElementById(`supervisor${location}`).value.trim(),
-      details: details
-    };
-
-    response = await fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'cors',
-      body: JSON.stringify(requestData)
-    });
-    result = await response.json();
-
-    switch (result.status) {
-      case 'success':
-        // 登録成功
-        console.log(`データ登録処理完了：[${getJSTISOString()}]`);
-        alert(`データ登録処理完了：[${getJSTISOString()}]`);
-        break;
-      case 'error':
-        // 既存データがある場合などはここに入る
-        console.log(`データ登録処理失敗 既存データ有り？：[${getJSTISOString()}]`);
-        alert(`データ登録処理失敗：[${getJSTISOString()}]`);
-        return;
-    }
-  } catch (error) {
-    console.error(`データ更新処理失敗：[${getJSTISOString()}]：`, error);
-  } finally {
-    fetchAllData(); // 全データを再取得
-    setLoading(false);
-  }
+  });
 }
+
 //既存データの存在チェック
 function isDataExist(selectedDate, location) {
   if (!dataCache || !dataCache[selectedDate]) {

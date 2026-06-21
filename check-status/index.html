@@ -10,9 +10,14 @@
   <title>出勤簿データ確認</title>
   <!-- スタイルシート -->
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.2/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.min.css">
   <!-- スクリプト -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js"></script>
+  <script src="https://code.jquery.com/jquery-4.0.0.min.js"
+    integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/ui/1.14.2/jquery-ui.min.js"
+    integrity="sha256-mblSWfbYzaq/f+4akyMhE6XELCou4jbkgPv+JQPER2M=" crossorigin="anonymous"></script>
   <script src="script.js"></script>
 </head>
 
@@ -35,11 +40,11 @@
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
-            <input id="recorder1" class="status-value" type="text" />
+            <input id="recorder1" class="status-value autocomplete-input" type="text" />
           </div>
           <div class="status-field">
             <label>監視長:</label>
-            <input id="supervisor1" class="status-value" type="text" />
+            <input id="supervisor1" class="status-value autocomplete-input" type="text" />
           </div>
         </div>
         <section id="attendanceTable1">
@@ -71,11 +76,11 @@
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
-            <input id="recorder2" class="status-value" type="text" />
+            <input id="recorder2" class="status-value autocomplete-input" type="text" />
           </div>
           <div class="status-field">
             <label>監視長:</label>
-            <input id="supervisor2" class="status-value" type="text" />
+            <input id="supervisor2" class="status-value autocomplete-input" type="text" />
           </div>
         </div>
         <section id="attendanceTable2">
@@ -107,11 +112,11 @@
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
-            <input id="recorder3" class="status-value" type="text" />
+            <input id="recorder3" class="status-value autocomplete-input" type="text" />
           </div>
           <div class="status-field">
             <label>監視長:</label>
-            <input id="supervisor3" class="status-value" type="text" />
+            <input id="supervisor3" class="status-value autocomplete-input" type="text" />
           </div>
         </div>
         <section id="attendanceTable3">
@@ -143,11 +148,11 @@
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
-            <input id="recorder4" class="status-value" type="text" />
+            <input id="recorder4" class="status-value autocomplete-input" type="text" />
           </div>
           <div class="status-field">
             <label>監視長:</label>
-            <input id="supervisor4" class="status-value" type="text" />
+            <input id="supervisor4" class="status-value autocomplete-input" type="text" />
           </div>
         </div>
         <section id="attendanceTable4">
