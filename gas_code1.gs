@@ -49,6 +49,7 @@ function registData(ss, data) {
 
     // 明細データの保存
     const detailSheet = ss.getSheetByName(SHEET_NAMES.DETAIL);
+    ensureConfirmationColumn(detailSheet);
     const details = data.details.map(detail => [
       data.date,         // 日付
       data.location,     // 監視所
@@ -59,10 +60,11 @@ function registData(ss, data) {
       detail.shiftType,  // 勤務形態
       detail.startTime,  // 出勤時刻
       detail.endTime,    // 退勤時刻
-      detail.workhours,  // 実働時間
+      calculateWorkhours(detail.shiftType, detail.startTime, detail.endTime), // 実働時間
       detail.batchTest ? '1' : '0', // バッチテスト
       detail.remarks,    // 備考
-      new Date()         // timestamp
+      new Date(),        // timestamp
+      data.managerConfirmed ? '1' : '0' // 統括確認済
     ]);
 
     detailSheet.getRange(
@@ -75,6 +77,49 @@ function registData(ss, data) {
     return createSuccessResponse('データが正常に保存されました');
   } catch (error) {
     throw new Error('データの保存中にエラーが発生しました: ' + error.message);
+  }
+}
+
+// 時間勤のみ実働時間を時間単位の少数（例: 1.25）で計算する。日跨ぎ勤務は対象外。
+function calculateWorkhours(shiftType, startTime, endTime) {
+  if (String(shiftType) !== '2') {
+    return null;
+  }
+
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+  if (startMinutes === null || endMinutes === null) {
+    throw new Error('時間勤の出勤時刻・退勤時刻は HH:mm 形式で入力してください。');
+  }
+
+  let workMinutes = endMinutes - startMinutes;
+  if (workMinutes < 0) {
+    throw new Error('退勤時刻は出勤時刻以降の時刻を入力してください。');
+  }
+  if (workMinutes >= 6 * 60) {
+    workMinutes -= 60;
+  }
+
+  // 時刻は15分刻みのため、0.25時間単位の少数値になる。
+  // 数値として保存するため、表示形式はスプレッドシート側に委ねる。
+  return Number((workMinutes / 60).toFixed(2));
+}
+
+function parseTimeToMinutes(time) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(time || ''));
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+// 明細シートのN列を「統括確認済」フラグとして使用する
+function ensureConfirmationColumn(detailSheet) {
+  const confirmationHeader = detailSheet.getRange(1, 14);
+  if (!confirmationHeader.getValue()) {
+    confirmationHeader.setValue('統括確認済');
   }
 }
 
@@ -108,12 +153,21 @@ function deleteData(ss, data) {
     }
 
     // 削除対象データの存在チェック
-    const values = detailSheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    const values = detailSheet.getRange(2, 1, lastRow - 1, 14).getValues();
     const isExisting = values.some(([date, location]) =>
       formatDate(new Date(date)) === targetDate && String(location) === targetLocation
     );
     if (!isExisting) {
       return createErrorResponse('削除対象のデータがありません。');
+    }
+
+    const isManagerConfirmed = values.some(row =>
+      formatDate(new Date(row[0])) === targetDate &&
+      String(row[1]) === targetLocation &&
+      (row[13] === 1 || row[13] === '1' || row[13] === true)
+    );
+    if (isManagerConfirmed) {
+      return createErrorResponse('統括確認済みのデータは修正できません。');
     }
 
 
@@ -184,7 +238,7 @@ function getDetailData(ss) {
   const detailLastRow = detailSheet.getLastRow();
   if (detailLastRow < 2) return [];
 
-  return detailSheet.getRange(2, 1, detailLastRow - 1, 12).getValues();
+  return detailSheet.getRange(2, 1, detailLastRow - 1, 14).getValues();
 }
 
 // ヘッダーデータの処理
@@ -200,7 +254,7 @@ function processHeaderData(headerData, results) {
 
     if (!results[date]) results[date] = {};
     if (!results[date][location.key]) {
-      results[date][location.key] = { writer: '', supervisor: '', details: [] };
+      results[date][location.key] = { writer: '', supervisor: '', managerConfirmed: false, details: [] };
     }
 
     results[date][location.key].writer = writer;
@@ -228,9 +282,11 @@ function processDetailData(detailData, results) {
 
     if (!results[date]) results[date] = {};
     if (!results[date][location.key]) {
-      results[date][location.key] = { writer: '', supervisor: '', details: [] };
+      results[date][location.key] = { writer: '', supervisor: '', managerConfirmed: false, details: [] };
     }
 
+    results[date][location.key].managerConfirmed = results[date][location.key].managerConfirmed ||
+      row[13] === 1 || row[13] === '1' || row[13] === true;
     results[date][location.key].details.push(detailInfo);
   });
 }

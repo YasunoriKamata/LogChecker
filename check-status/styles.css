@@ -64,6 +64,34 @@ h1 {
   background-color: #0056b3;
 }
 
+.confirmation-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  font-weight: bold;
+  color: #1f6b3a;
+  vertical-align: middle;
+}
+
+.status-block.is-confirmed {
+  background-color: #f1f7f2;
+  border-color: #77a987;
+}
+
+.status-block.is-confirmed::before {
+  content: '統括確認済み：この監視所の内容は編集できません';
+  display: block;
+  margin-bottom: 10px;
+  color: #1f6b3a;
+  font-weight: bold;
+}
+
+.status-block :disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .status-fields-container {
   display: flex;
   gap: 5px;

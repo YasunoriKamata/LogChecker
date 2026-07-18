@@ -20,6 +20,9 @@ let nameMasterCache = [];
 
 // 初期処理
 $(document).ready(function () {
+  // 今日の日付を設定
+  document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
   // 全データを取得
   fetchAllData();
   // マスタデータの読み込み
@@ -28,9 +31,6 @@ $(document).ready(function () {
   // ヘッダの初期化・行の動的追加
   initHeaders();
   initRow();
-
-  // 今日の日付を設定
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
 
   // ドラッグスクロールの実装
   initDragScroll();
@@ -41,7 +41,20 @@ function initHeaders() {
   for (let i = 1; i <= 4; i++) {
     document.getElementById(`recorder${i}`).value = '';
     document.getElementById(`supervisor${i}`).value = '';
+    document.getElementById(`managerConfirmed${i}`).checked = false;
+    setLocationLocked(i, false);
   }
+}
+
+// 統括確認済みの監視所は、確認状態を含めてすべての操作を無効化する
+function setLocationLocked(location, isLocked) {
+  const block = document.querySelector(`.status-block[data-location="${location}"]`);
+  if (!block) return;
+
+  block.classList.toggle('is-confirmed', isLocked);
+  block.querySelectorAll('input, select, button').forEach(element => {
+    element.disabled = isLocked;
+  });
 }
 
 // テーブルの行を初期化
@@ -185,6 +198,8 @@ async function fetchAllData() {
     const date = new Date(document.getElementById('date').value).toISOString().split('T')[0];
     const formattedToday = formatDateForAPI(date);
     if (responseData[formattedToday]) {
+      initHeaders();
+      initRow();
       updateDisplay(responseData[formattedToday]);
     }
 
@@ -268,6 +283,7 @@ function displayLocationInfo(index, locationData) {
     recorderElement.value = locationData.writer;
     supervisorElement.value = locationData.supervisor;
   }
+  document.getElementById(`managerConfirmed${index}`).checked = locationData.managerConfirmed === true;
 
   // テーブルの内容をクリア
   if (tableBody) {
@@ -303,6 +319,8 @@ function displayLocationInfo(index, locationData) {
       tableBody.innerHTML = ROW_TEMPLATE;
     }
   }
+
+  setLocationLocked(index, locationData.managerConfirmed === true);
 }
 
 // ボタン処理
@@ -321,6 +339,14 @@ function addRow(location) {
 
 async function execUpdate(location) {
   let msg = '';
+  if (document.getElementById(`managerConfirmed${location}`).disabled) {
+    Swal.fire({
+      icon: 'info',
+      title: '統括確認済みです',
+      text: '確認済みのデータは修正登録できません。'
+    });
+    return;
+  }
   const selectedDate = document.getElementById('date').value.replace(/-/g, '/');
   if (!selectedDate) {
     Swal.fire({
@@ -416,6 +442,7 @@ async function execUpdate(location) {
           location: `${location}`,
           recorder: document.getElementById(`recorder${location}`).value.trim(),
           supervisor: document.getElementById(`supervisor${location}`).value.trim(),
+          managerConfirmed: document.getElementById(`managerConfirmed${location}`).checked,
           details: details
         };
 

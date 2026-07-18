@@ -21,7 +21,7 @@
     integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
   <script src="https://code.jquery.com/ui/1.14.2/jquery-ui.min.js"
     integrity="sha256-mblSWfbYzaq/f+4akyMhE6XELCou4jbkgPv+JQPER2M=" crossorigin="anonymous"></script>
-  <script src="script.js?v=20260621"></script>
+  <script src="script.js?v=20260718"></script>
 </head>
 
 <body>
@@ -36,10 +36,11 @@
     </div>
 
     <div class="status-container">
-      <div class="status-block">
+      <div class="status-block" data-location="1">
         <h3>森戸海岸監視所</h3>
         <button onclick="addRow(1)" class="btn">行追加</button>
         <button onclick="execUpdate(1)" class="btn">修正登録</button>
+        <label class="confirmation-field"><input id="managerConfirmed1" type="checkbox"> 統括確認済</label>
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
@@ -72,10 +73,11 @@
         </section>
       </div>
 
-      <div class="status-block">
+      <div class="status-block" data-location="2">
         <h3>一色海岸監視所</h3>
         <button onclick="addRow(2)" class="btn">行追加</button>
         <button onclick="execUpdate(2)" class="btn">修正登録</button>
+        <label class="confirmation-field"><input id="managerConfirmed2" type="checkbox"> 統括確認済</label>
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
@@ -108,10 +110,11 @@
         </section>
       </div>
 
-      <div class="status-block">
+      <div class="status-block" data-location="3">
         <h3>長者ヶ崎海岸監視所</h3>
         <button onclick="addRow(3)" class="btn">行追加</button>
         <button onclick="execUpdate(3)" class="btn">修正登録</button>
+        <label class="confirmation-field"><input id="managerConfirmed3" type="checkbox"> 統括確認済</label>
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
@@ -144,10 +147,11 @@
         </section>
       </div>
 
-      <div class="status-block">
+      <div class="status-block" data-location="4">
         <h3>イベント</h3>
         <button onclick="addRow(4)" class="btn">行追加</button>
         <button onclick="execUpdate(4)" class="btn">修正登録</button>
+        <label class="confirmation-field"><input id="managerConfirmed4" type="checkbox"> 統括確認済</label>
         <div class="status-fields-container">
           <div class="status-field">
             <label>記入者:</label>
